@@ -83,13 +83,27 @@ function App() {
   },[]);
 
   const productModalRef = useRef(null);
+  const [modalMode, setModalMode] = useState(null);
+
   useEffect(()=>{
     // console.log(productModalRef.current);
     new Modal(productModalRef.current, {backdrop: false});
     console.log(Modal.getInstance(productModalRef.current));
   },[]);
 
-  const handleOpenProductModal = ()=>{
+  const handleOpenProductModal = (modal, product)=>{
+    setModalMode(modal);
+    switch (modal) {
+      case 'create':
+        setTempProduct(defaultModalState);
+        break;
+      case 'edit':
+        setTempProduct(product);
+        break;
+      default:
+        break;
+	  }
+    
     Modal.getInstance(productModalRef.current).show();
   }
   const handleCloseProductModal = ()=>{
@@ -105,7 +119,15 @@ function App() {
       [name]:type === 'checkbox' ? checked : value
     });
   }
-
+  const handleImageChange =(e, index)=>{
+    const {value} = e.target;
+    const newImages = [...tempProduct.imagesUrl];
+    newImages[index] = value;
+    setTempProduct({
+      ...tempProduct,
+      imagesUrl: newImages
+    })
+  }
 	return (
 		<>
 			{isAuth ? (
@@ -114,7 +136,7 @@ function App() {
 						<div className="col">
 							<div className="d-flex justify-content-between">
 								<h2>產品列表</h2>
-								<button onClick={handleOpenProductModal} type="button" className="btn btn-primary">
+								<button onClick={() => handleOpenProductModal("create")} type="button" className="btn btn-primary">
 									建立新的產品
 								</button>
 							</div>
@@ -137,7 +159,7 @@ function App() {
 											<td>{product.is_enabled}</td>
 											<td>
 												<div className="btn-group">
-													<button onClick={handleOpenProductModal} type="button" className="btn btn-outline-primary btn-sm">
+													<button onClick={() => handleOpenProductModal("edit", product)} type="button" className="btn btn-outline-primary btn-sm">
 														編輯
 													</button>
 													<button type="button" className="btn btn-outline-danger btn-sm">
@@ -173,7 +195,7 @@ function App() {
 				<div className="modal-dialog modal-dialog-centered modal-xl">
 					<div className="modal-content border-0 shadow">
 						<div className="modal-header border-bottom">
-							<h5 className="modal-title fs-4">新增產品</h5>
+							<h5 className="modal-title fs-4">{modalMode === "create" ? "新增產品" : "編輯產品"}</h5>
 							<button onClick={handleCloseProductModal} type="button" className="btn-close" aria-label="Close"></button>
 						</div>
 
@@ -197,10 +219,15 @@ function App() {
 												<label htmlFor={`imagesUrl-${index + 1}`} className="form-label">
 													副圖 {index + 1}
 												</label>
-												<input id={`imagesUrl-${index + 1}`} type="text" placeholder={`圖片網址 ${index + 1}`} className="form-control mb-2" />
+												<input value={image} onChange={(e) => handleImageChange(e, index)} id={`imagesUrl-${index + 1}`} type="text" placeholder={`圖片網址 ${index + 1}`} className="form-control mb-2" />
 												{image && <img src={image} alt={`副圖 ${index + 1}`} className="img-fluid mb-2" />}
 											</div>
 										))}
+										<div className="btn-group w-100">
+											{tempProduct.imagesUrl.length < 5 && tempProduct.imagesUrl[tempProduct.imagesUrl.length - 1] !== "" && (<button className="btn btn-outline-primary btn-sm w-100">新增圖片</button>)}
+											<button className="btn btn-outline-primary btn-sm w-100">新增圖片</button>
+											<button className="btn btn-outline-danger btn-sm w-100">取消圖片</button>
+										</div>
 									</div>
 								</div>
 
