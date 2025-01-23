@@ -20,7 +20,6 @@ const defaultModalState = {
 
 function App() {
 	const [isAuth, setIsAuth] = useState(false);
-
 	
 	const [products, setProducts] = useState([]);
 
@@ -69,65 +68,108 @@ function App() {
 	const checkUserLogin = async () => {
 		try {
 			await axios.post(`${BASE_URL}/v2/api/user/check`);
-      getProducts();
+			getProducts();
 			setIsAuth(true);
 		} catch (error) {
 			console.error(error);
 		}
 	};
 
-  useEffect(()=>{
-    const token = document.cookie.replace(/(?:(?:^|.*;\s*)hexToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-    axios.defaults.headers.common["Authorization"] = token;
-    checkUserLogin();
-  },[]);
+	useEffect(()=>{
+		const token = document.cookie.replace(/(?:(?:^|.*;\s*)hexToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+		axios.defaults.headers.common["Authorization"] = token;
+		checkUserLogin();
+	},[]);
 
-  const productModalRef = useRef(null);
-  const [modalMode, setModalMode] = useState(null);
+	const productModalRef = useRef(null);
+	const [modalMode, setModalMode] = useState(null);
 
-  useEffect(()=>{
-    // console.log(productModalRef.current);
-    new Modal(productModalRef.current, {backdrop: false});
-    console.log(Modal.getInstance(productModalRef.current));
-  },[]);
+	useEffect(()=>{
+		// console.log(productModalRef.current);
+		new Modal(productModalRef.current, {backdrop: false});
+		// console.log(Modal.getInstance(productModalRef.current));
+	},[]);
 
-  const handleOpenProductModal = (modal, product)=>{
-    setModalMode(modal);
-    switch (modal) {
-      case 'create':
-        setTempProduct(defaultModalState);
-        break;
-      case 'edit':
-        setTempProduct(product);
-        break;
-      default:
-        break;
-	  }
-    
-    Modal.getInstance(productModalRef.current).show();
-  }
-  const handleCloseProductModal = ()=>{
-    Modal.getInstance(productModalRef.current).hide();
-  }
+	const handleOpenProductModal = (modal, product)=>{
+		setModalMode(modal);
+		switch (modal) {
+		case 'create':
+			setTempProduct(defaultModalState);
+			break;
+		case 'edit':
+			setTempProduct(product);
+			break;
+		default:
+			break;
+		}
+		const modalInstance = Modal.getInstance(productModalRef.current);
+		modalInstance.show();
+	}
+	const handleCloseProductModal = ()=>{
+		const modalInstance = Modal.getInstance(productModalRef.current);
+		modalInstance.hide();
+	}
 
-  const [tempProduct, setTempProduct] = useState({defaultModalState});
-  const handleModalInputChange=(e)=>{
-    const {value , name, checked, type} = e.target;
-    setTempProduct({
-      ...tempProduct,
-      // [name]:value
-      [name]:type === 'checkbox' ? checked : value
-    });
-  }
-  const handleImageChange =(e, index)=>{
-    const {value} = e.target;
-    const newImages = [...tempProduct.imagesUrl];
-    newImages[index] = value;
-    setTempProduct({
-      ...tempProduct,
-      imagesUrl: newImages
-    })
-  }
+	const [tempProduct, setTempProduct] = useState(defaultModalState);
+	const handleModalInputChange=(e)=>{
+		const {value , name, checked, type} = e.target;
+		setTempProduct({
+		...tempProduct,
+		// [name]:value
+		[name]:type === 'checkbox' ? checked : value
+		});
+	}
+	const handleImageChange =(e, index)=>{
+		const {value} = e.target;
+		const newImages = [...tempProduct.imagesUrl];
+		newImages[index] = value;
+		setTempProduct({
+			...tempProduct,
+			imagesUrl: newImages
+		})
+	}
+	const handalAddImage =()=>{
+		const newImages = [...tempProduct.imagesUrl, ''];
+		setTempProduct({
+			...tempProduct,
+			imagesUrl: newImages
+		})
+	}
+	const handalRemoveImage = () => {
+		const newImages = [...tempProduct.imagesUrl];
+		newImages.pop();
+		setTempProduct({
+			...tempProduct,
+			imagesUrl: newImages,
+		});
+	};
+	const createProduct = async()=>{
+		try{
+			await axios.post(`${BASE_URL}/v2/api/${API_PATH}/admin/product`, {
+				data: {
+					...tempProduct,
+					origin_price: Number(tempProduct.origin_price),
+					price: Number(tempProduct.price),
+					is_enabled:tempProduct.is_enabled ? 1 : 0
+				},
+			});
+		}catch(error){
+			alert('新增產品失敗');
+		}
+	}
+
+	const handleUpdateProduct = async()=>{
+		try{
+			await createProduct();
+			getProducts();
+			handleCloseProductModal();
+		}catch(error){
+			alert('更新產品失敗');
+		}
+
+	}
+
+
 	return (
 		<>
 			{isAuth ? (
@@ -224,9 +266,16 @@ function App() {
 											</div>
 										))}
 										<div className="btn-group w-100">
-											{tempProduct.imagesUrl.length < 5 && tempProduct.imagesUrl[tempProduct.imagesUrl.length - 1] !== "" && (<button className="btn btn-outline-primary btn-sm w-100">新增圖片</button>)}
-											<button className="btn btn-outline-primary btn-sm w-100">新增圖片</button>
-											<button className="btn btn-outline-danger btn-sm w-100">取消圖片</button>
+											{tempProduct.imagesUrl.length < 5 && tempProduct.imagesUrl[tempProduct.imagesUrl.length - 1] !== "" && (
+												<button onClick={handalAddImage} className="btn btn-outline-primary btn-sm w-100">
+													新增圖片
+												</button>
+											)}
+											{tempProduct.imagesUrl.length > 1 && (
+												<button onClick={handalRemoveImage} className="btn btn-outline-danger btn-sm w-100">
+													刪除圖片
+												</button>
+											)}
 										</div>
 									</div>
 								</div>
@@ -296,7 +345,7 @@ function App() {
 							<button onClick={handleCloseProductModal} type="button" className="btn btn-secondary">
 								取消
 							</button>
-							<button type="button" className="btn btn-primary">
+							<button onClick={handleUpdateProduct} type="button" className="btn btn-primary">
 								確認
 							</button>
 						</div>
